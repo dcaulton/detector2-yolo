@@ -78,37 +78,49 @@ def on_message(client, userdata, msg):
         end_time = time.perf_counter()
         inference_time = ((end_time - start_time) * 1000)
         mlflow.log_metric("inference_time", inference_time)
-        for r in results:
-            print(f"Detected: {r.names[int(r.boxes.cls[0])]} at {r.boxes.xyxy[0].tolist()}")
 
-        if results and len(results[0].boxes) > 0:
-            detections = []
-            for box in results[0].boxes:
-                detection = {
-                    "class_id": int(box.cls[0].item()),
-                    "class_name": results[0].names[int(box.cls[0].item())],
-                    "confidence": float(box.conf[0].item()),
-                    "bbox": box.xyxy[0].tolist()  # [xmin, ymin, xmax, ymax]
-                }
-                detections.append(detection)
+        r = results[0]  # The Results object for this image
 
-            # Log number of detections
-            mlflow.log_metric("num_detections", len(detections))
+        boxes = r.boxes  # Boxes tensor
 
-            # Log full detections as JSON artifact (viewable in MLflow UI)
-            detections_json_path = "/data/detections.json"
-            with open(detections_json_path, "w") as f:
-                json.dump(detections, f, indent=2)
-            mlflow.log_artifact(detections_json_path)
-
-            # Optional: Log top detection as params (quick view in table)
-            top = detections[0]
-            mlflow.log_param("top_class", top["class_name"])
-            mlflow.log_metric("top_confidence", top["confidence"])
-            print(f"Logged {len(detections)} detections (top: {top['class_name']} @ {top['confidence']:.2f})")
-        else:
+        if len(boxes) == 0:
+            print("No detections above confidence threshold")
             mlflow.log_metric("num_detections", 0)
-            print("No detections")
+        else:
+            print(f"{len(boxes)} detection(s) found")
+            mlflow.log_metric("num_detections", len(boxes))
+
+            # Now safe to access top detection
+            top_cls_id = int(boxes.cls[0].item())
+            top_conf = boxes.conf[0].item()
+            top_name = r.names[top_cls_id]
+            top_bbox = boxes.xyxy[0].tolist()
+
+            print(f"Top detection: {top_name} (confidence: {top_conf:.2f}) at {top_bbox}")
+
+            # Optional: Log top detection as params/metrics
+            mlflow.log_param("top_class", top_name)
+            mlflow.log_metric("top_confidence", top_conf)
+
+            # Annotated image (only if detections exist)
+            annotated = r.plot()  # Draws boxes on image
+            annotated_path = "/data/yolo_annotated.jpg"
+            cv2.imwrite(annotated_path, annotated)
+            mlflow.log_artifact(annotated_path)
+
+            # Full detections JSON (as before)
+            detections = []
+            for i in range(len(boxes)):
+                cls_id = int(boxes.cls[i].item())
+                detections.append({
+                    "class_name": r.names[cls_id],
+                    "confidence": float(boxes.conf[i].item()),
+                    "bbox": boxes.xyxy[i].tolist()
+                })
+            json_path = "/data/detections.json"
+            with open(json_path, "w") as f:
+                json.dump(detections, f, indent=2)
+            mlflow.log_artifact(json_path)
 
 # Create and configure the client
 client = mqtt.Client(client_id="detection2")
