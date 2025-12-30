@@ -9,6 +9,8 @@ RUN pip3 install --no-cache-dir torch torchvision torchaudio --index-url https:/
 # YOLO + your deps
 RUN pip3 install --no-cache-dir ultralytics paho-mqtt python-dotenv mlflow opencv-python
 
-COPY app.py /app/app.py
 WORKDIR /app
+COPY src/ .
+RUN pip install --no-cache-dir -r requirements.txt
+
 CMD ["python3", "-u", "app.py"]
