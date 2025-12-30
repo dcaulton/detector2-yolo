@@ -1,6 +1,7 @@
 import os
 import time
 import mlflow
+import json
 import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 import base64 
@@ -75,7 +76,7 @@ def on_message(client, userdata, msg):
         results = model(img)  # Runs on GPU automatically
         for r in results:
             print(f"Detected: {r.names[int(r.boxes.cls[0])]} at {r.boxes.xyxy[0].tolist()}")
-        mlflow.log_param("detections", results.tojson())
+        mlflow.log_param("detections", json.dumps(results))
         mlflow.log_metric("inference_time", inference_time)
         mlflow.log_artifact(artifact_path)
 
