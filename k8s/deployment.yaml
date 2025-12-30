@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: detection-app
+  name: detection2
 spec:
-  replicas: 0   # set to 0 to disable
+  replicas: 1   # set to 0 to disable
   selector:
     matchLabels:
-      app: detection-app
+      app: detection2
   template:
     metadata:
       labels:
-        app: detection-app
+        app: detection2
     spec:
       containers:
       - name: app
         tty: true
-        image: ghcr.io/dcaulton/detection1:latest
+        image: ghcr.io/dcaulton/detection2-yolo:latest
         imagePullPolicy: Always
         env:
           - name: MQTT_BROKER

@@ -10,10 +10,11 @@ import torch
 import torch.nn.functional as F
 import sys
 import datetime
+from ultralytics import YOLO
 
 # Force flush just in case
 sys.stdout.flush()
-print(f"[{datetime.datetime.now()}] >>> DETECTION1 CONTAINER STARTED <<<")
+print(f"[{datetime.datetime.now()}] >>> DETECTION2 CONTAINER STARTED <<<")
 print(f"[{datetime.datetime.now()}] Python version: {sys.version}")
 print(f"[{datetime.datetime.now()}] Attempting MQTT connection to mosquitto.mqtt.svc.cluster.local:1883...")
 sys.stdout.flush()
@@ -30,10 +31,8 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
 MQTT_USER = os.getenv("MQTT_USER")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 MQTT_TOPIC = "frigate/#"
-#MQTT_TOPIC = "frigate/+/snapshot"
 
-# Your inference pipeline (example placeholder)
-# pipe = SomeModel(...)
+model = YOLO("yolov11n.pt")
 
 def check_gpu():
     print(f"[{datetime.datetime.now()}] GPU TEST START")
@@ -49,29 +48,6 @@ def check_gpu():
         print("No CUDA – falling back to CPU")
     print(f"[{datetime.datetime.now()}] GPU TEST END")
     sys.stdout.flush()
-
-def process_image(image_bytes: bytes):
-    start_time = time.perf_counter()
-    # Decode JPEG
-    nparr = np.frombuffer(image_bytes, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    
-    # Convert numpy to torch tensor on GPU
-    tensor = torch.from_numpy(img).permute(2, 0, 1).float().unsqueeze(0).cuda() / 255.0
-
-    # Example GPU ops: resize + gaussian blur (you can chain more)
-    tensor = F.interpolate(tensor, size=(640, 640), mode='bilinear', align_corners=False)
-    tensor = F.avg_pool2d(tensor, kernel_size=5, stride=1, padding=2)  # Approx blur
-
-    # Back to numpy for saving/MLflow
-    processed_img = (tensor.squeeze(0).permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
-
-    generated_path = "/data/generated.jpg"  # PVC mount
-    cv2.imwrite(generated_path, img)
-    
-    end_time = time.perf_counter()
-    inference_time = ((end_time - start_time) * 1000)
-    return inference_time, generated_path
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -93,25 +69,18 @@ def on_message(client, userdata, msg):
     if not msg.topic.endswith('snapshot'):
         return
 
-    with mlflow.start_run(run_name="detection-run"):
+    with mlflow.start_run(run_name="detection2-yolo"):
         mlflow.log_param("topic", msg.topic)
-        mlflow.log_param("prompt", "cyberpunk style")  # or dynamic
-        
-        # Handle payload: raw JPEG on snapshot topics
         image_bytes = msg.payload
-        # If using frigate/events topic instead, it's base64: 
-        # payload = json.loads(msg.payload)
-        # image_bytes = base64.b64decode(payload["after"]["snapshot"])
-        
-        inference_time, artifact_path = process_image(image_bytes)
-        
+        results = model(image_bytes)  # Runs on GPU automatically
+        for r in results:
+            print(f"Detected: {r.names[int(r.boxes.cls[0])]} at {r.boxes.xyxy[0].tolist()}")
+        mlflow.log_param("detections", results.tojson())
         mlflow.log_metric("inference_time", inference_time)
         mlflow.log_artifact(artifact_path)
-        
-        # Optional: trigger downstream actions (e.g., publish result back to MQTT)
 
 # Create and configure the client
-client = mqtt.Client(client_id="detection1")
+client = mqtt.Client(client_id="detection2")
 if MQTT_USER and MQTT_PASSWORD:
     client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
 

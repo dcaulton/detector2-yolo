@@ -1,4 +1,4 @@
-# detector1
+# detector2
 detector project to run with a Frigate network and Nvidia acceleration
 
 This is intended to be a template.  It runs cleanly in the my homelab setup (mini pc, lots of ram and disk, 1080 Ti GPU).  The following features work:
