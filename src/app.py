@@ -59,12 +59,7 @@ def on_connect(client, userdata, flags, rc):
     check_gpu()
 
 def on_message(client, userdata, msg):
-    print(f"[{datetime.datetime.now()}] >>> RAW MQTT MESSAGE RECEIVED <<<")
-    print(f"Topic: {msg.topic}")
-    print(f"Payload length: {len(msg.payload)} bytes")
-    print(f"Payload type: {type(msg.payload)}")
-    print(f"First 50 bytes (hex): {msg.payload[:50].hex()}")
-    sys.stdout.flush()  # Force it out
+    print(f"[{datetime.datetime.now()}] >>> RAW MQTT MESSAGE RECEIVED for Topic {msg.topic}<<<")
     
     if not msg.topic.endswith('snapshot'):
         return
@@ -72,6 +67,11 @@ def on_message(client, userdata, msg):
     with mlflow.start_run(run_name="detection2-yolo"):
         mlflow.log_param("topic", msg.topic)
         image_bytes = msg.payload
+        nparr = np.frombuffer(image_bytes, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)  # Flags for color image
+        if img is None:
+            print("Failed to decode image – corrupt payload?")
+            return
         results = model(image_bytes)  # Runs on GPU automatically
         for r in results:
             print(f"Detected: {r.names[int(r.boxes.cls[0])]} at {r.boxes.xyxy[0].tolist()}")
