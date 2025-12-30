@@ -76,7 +76,37 @@ def on_message(client, userdata, msg):
         results = model(img)  # Runs on GPU automatically
         for r in results:
             print(f"Detected: {r.names[int(r.boxes.cls[0])]} at {r.boxes.xyxy[0].tolist()}")
-        mlflow.log_param("detections", json.dumps(results))
+
+        if results and len(results[0].boxes) > 0:
+            detections = []
+            for box in results[0].boxes:
+                detection = {
+                    "class_id": int(box.cls[0].item()),
+                    "class_name": results[0].names[int(box.cls[0].item())],
+                    "confidence": float(box.conf[0].item()),
+                    "bbox": box.xyxy[0].tolist()  # [xmin, ymin, xmax, ymax]
+                }
+                detections.append(detection)
+
+            # Log number of detections
+            mlflow.log_metric("num_detections", len(detections))
+
+            # Log full detections as JSON artifact (viewable in MLflow UI)
+            detections_json_path = "/data/detections.json"
+            with open(detections_json_path, "w") as f:
+                json.dump(detections, f, indent=2)
+            mlflow.log_artifact(detections_json_path)
+
+            # Optional: Log top detection as params (quick view in table)
+            top = detections[0]
+            mlflow.log_param("top_class", top["class_name"])
+            mlflow.log_metric("top_confidence", top["confidence"])
+
+            print(f"Logged {len(detections)} detections (top: {top['class_name']} @ {top['confidence']:.2f})")
+        else:
+            mlflow.log_metric("num_detections", 0)
+            print("No detections")
+
         mlflow.log_metric("inference_time", inference_time)
         mlflow.log_artifact(artifact_path)
 
