@@ -72,7 +72,7 @@ def on_message(client, userdata, msg):
         if img is None:
             print("Failed to decode image – corrupt payload?")
             return
-        results = model(image_bytes)  # Runs on GPU automatically
+        results = model(img)  # Runs on GPU automatically
         for r in results:
             print(f"Detected: {r.names[int(r.boxes.cls[0])]} at {r.boxes.xyxy[0].tolist()}")
         mlflow.log_param("detections", results.tojson())
