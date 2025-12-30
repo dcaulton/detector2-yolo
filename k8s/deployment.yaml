@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: detection2
 spec:
-  replicas: 0   # set to 0 to disable
+  replicas: 1   # set to 0 to disable
   selector:
     matchLabels:
       app: detection2
