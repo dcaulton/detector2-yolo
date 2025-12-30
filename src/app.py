@@ -67,6 +67,7 @@ def on_message(client, userdata, msg):
 
     with mlflow.start_run(run_name="detection2-yolo"):
         mlflow.log_param("topic", msg.topic)
+        start_time = time.perf_counter()
         image_bytes = msg.payload
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)  # Flags for color image
@@ -74,6 +75,9 @@ def on_message(client, userdata, msg):
             print("Failed to decode image – corrupt payload?")
             return
         results = model(img)  # Runs on GPU automatically
+        end_time = time.perf_counter()
+        inference_time = ((end_time - start_time) * 1000)
+        mlflow.log_metric("inference_time", inference_time)
         for r in results:
             print(f"Detected: {r.names[int(r.boxes.cls[0])]} at {r.boxes.xyxy[0].tolist()}")
 
@@ -101,14 +105,10 @@ def on_message(client, userdata, msg):
             top = detections[0]
             mlflow.log_param("top_class", top["class_name"])
             mlflow.log_metric("top_confidence", top["confidence"])
-
             print(f"Logged {len(detections)} detections (top: {top['class_name']} @ {top['confidence']:.2f})")
         else:
             mlflow.log_metric("num_detections", 0)
             print("No detections")
-
-        mlflow.log_metric("inference_time", inference_time)
-        mlflow.log_artifact(artifact_path)
 
 # Create and configure the client
 client = mqtt.Client(client_id="detection2")
