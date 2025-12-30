@@ -42,5 +42,6 @@ spec:
           name: experiment-data
       volumes:
         - name: experiment-data
-          persistentVolumeClaim:
-            claimName: detection-experiments-pvc
+          hostPath:
+            path: /mnt/data/detection-experiments/detection2  # ← Your actual big disk path (same as original hostPath PV pointed to)
+            type: DirectoryOrCreate
