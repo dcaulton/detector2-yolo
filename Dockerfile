@@ -19,6 +19,7 @@ RUN mkdir -p /root/.cache/torch/hub
 # Copy pre-downloaded models into the expected cache location
 COPY models/yolo11n.pt /root/.cache/torch/hub/yolo11n.pt
 COPY models/yolo11s.pt /root/.cache/torch/hub/yolo11s.pt
+COPY models/yolo11m.pt /root/.cache/torch/hub/yolo11m.pt
 # Add more if you downloaded them
 
 # Optional: settings dir to silence warning

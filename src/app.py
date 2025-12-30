@@ -33,7 +33,7 @@ MQTT_USER = os.getenv("MQTT_USER")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 MQTT_TOPIC = "frigate/#"
 
-model = YOLO("/root/.cache/torch/hub/yolo11s.pt")
+model = YOLO("/root/.cache/torch/hub/yolo11m.pt")
 
 def check_gpu():
     print(f"[{datetime.datetime.now()}] GPU TEST START")
