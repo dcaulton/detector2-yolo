@@ -106,7 +106,12 @@ def on_message(client, userdata, msg):
             annotated = r.plot()  # Draws boxes on image
             annotated_path = "/data/yolo_annotated.jpg"
             cv2.imwrite(annotated_path, annotated)
-            mlflow.log_artifact(annotated_path)
+
+            try:
+              mlflow.log_artifact(annotated_path)
+              print("Artifact uploaded successfully")
+            except Exception as e:
+              print(f"MLflow artifact upload failed: {str(e)}")
 
             # Full detections JSON (as before)
             detections = []
