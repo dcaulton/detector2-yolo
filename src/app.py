@@ -1,4 +1,5 @@
 import os
+import hashlib
 import time
 import mlflow
 import json
@@ -50,26 +51,9 @@ def check_gpu():
     print(f"[{datetime.datetime.now()}] GPU TEST END")
     sys.stdout.flush()
 
-def extract_frigate_event_id(jpeg_bytes):
-    from struct import unpack
-    i = 2  # Skip SOI (FFD8 FF)
-    while i < len(jpeg_bytes) - 1:
-        marker = jpeg_bytes[i:i+2]
-        if marker[0] != 0xFF:
-            break
-        i += 2
-        length = unpack('>H', jpeg_bytes[i:i+2])[0]
-        i += 2
-        if marker[1] == 0xE1:  # APP1 (EXIF) or 0xEE (APP14)
-            chunk = jpeg_bytes[i:i+length].decode('utf-8', errors='ignore')
-            if 'frigate' in chunk.lower() or any(s in chunk for s in ['.', '-fx', '-ao']):  # Heuristic for ID pattern
-                # Extract <timestamp>.<us>-<hex> (regex or split)
-                import re
-                mid = re.search(r'(\d+\.\d+-[a-z0-9]{6,8})', chunk)
-                if mid:
-                    return mid.group(1)
-        i += length
-    return None
+def get_unique_key(msg, image_bytes):
+    payload_hash = hashlib.sha256(image_bytes).hexdigest()
+    return f"{msg.topic}_{payload_hash}"
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -87,8 +71,9 @@ def on_message(client, userdata, msg):
         return
 
     image_bytes = msg.payload
-    event_id = extract_frigate_event_id(image_bytes) or f"{msg.topic}_{hash(msg.payload[:32])}"
-    with mlflow.start_run(run_name=event_id):
+    run_key = get_unique_key(msg, image_bytes)
+
+    with mlflow.start_run(run_name=run_key):
         mlflow.log_param("topic", msg.topic)
         mlflow.log_param("event_id", event_id)
         mlflow.log_param("detector_type", "yolo")
