@@ -24,7 +24,7 @@ load_dotenv()  # For local dev; in k8s use Secrets
 
 # MLflow setup
 mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://mlflow-service.mlflow.svc.cluster.local:5000"))
-mlflow.set_experiment("detection2-yolo")
+mlflow.set_experiment("exp-2026-yolo-vit")
 
 # MQTT credentials (from Secrets in k8s)
 MQTT_BROKER = os.getenv("MQTT_BROKER", "mqtt-broker.default.svc.cluster.local")  # adjust to your broker service
@@ -65,8 +65,9 @@ def on_message(client, userdata, msg):
     if not msg.topic.endswith('snapshot'):
         return
 
-    with mlflow.start_run(run_name="detection2-aa"):
+    with mlflow.start_run(run_name=str(msg.timestamp)):
         mlflow.log_param("topic", msg.topic)
+        mlflow.log_param("detector_type", "yolo")
         start_time = time.perf_counter()
         image_bytes = msg.payload
         nparr = np.frombuffer(image_bytes, np.uint8)
