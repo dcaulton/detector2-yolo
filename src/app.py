@@ -75,7 +75,6 @@ def on_message(client, userdata, msg):
 
     with mlflow.start_run(run_name=run_key):
         mlflow.log_param("topic", msg.topic)
-        mlflow.log_param("event_id", event_id)
         mlflow.log_param("detector_type", "yolo")
         start_time = time.perf_counter()
         nparr = np.frombuffer(image_bytes, np.uint8)
