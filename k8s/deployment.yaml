@@ -15,7 +15,7 @@ spec:
       containers:
       - name: app
         tty: true
-        image: ghcr.io/dcaulton/detection2-yolo:latest
+        image: ghcr.io/dcaulton/detection2:latest
         imagePullPolicy: Always
         env:
           - name: MQTT_BROKER
