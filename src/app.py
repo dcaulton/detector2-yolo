@@ -33,6 +33,7 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
 MQTT_USER = os.getenv("MQTT_USER")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 MQTT_TOPIC = "frigate/#"
+MODEL_NAME = 'yolo11m'
 
 model = YOLO("/root/.cache/torch/hub/yolo11m.pt")
 
@@ -75,7 +76,7 @@ def on_message(client, userdata, msg):
 
     with mlflow.start_run(run_name=run_key):
         mlflow.log_param("topic", msg.topic)
-        mlflow.log_param("detector_type", "yolo")
+        mlflow.log_param("detector_type", MODEL_NAME)
         start_time = time.perf_counter()
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)  # Flags for color image
@@ -112,7 +113,7 @@ def on_message(client, userdata, msg):
 
             # Annotated image (only if detections exist)
             annotated = r.plot()  # Draws boxes on image
-            annotated_path = "/data/yolo_annotated.jpg"
+            annotated_path = f"/data/{MODEL_NAME}_annotated.jpg"
             cv2.imwrite(annotated_path, annotated)
 
             try:
@@ -130,7 +131,7 @@ def on_message(client, userdata, msg):
                     "confidence": float(boxes.conf[i].item()),
                     "bbox": boxes.xyxy[i].tolist()
                 })
-            json_path = "/data/detections.json"
+            json_path = f"/data/{MODEL_NAME}_detections.json"
             with open(json_path, "w") as f:
                 json.dump(detections, f, indent=2)
             mlflow.log_artifact(json_path)
