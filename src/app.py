@@ -25,7 +25,7 @@ load_dotenv()  # For local dev; in k8s use Secrets
 
 # MLflow setup
 mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://mlflow-service.mlflow.svc.cluster.local:5000"))
-mlflow.set_experiment("exp-2026-yolo-vit")
+mlflow.set_experiment("detection")
 
 # MQTT credentials (from Secrets in k8s)
 MQTT_BROKER = os.getenv("MQTT_BROKER", "mqtt-broker.default.svc.cluster.local")  # adjust to your broker service
