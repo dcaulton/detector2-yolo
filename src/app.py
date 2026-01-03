@@ -33,8 +33,8 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
 MQTT_USER = os.getenv("MQTT_USER")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 MQTT_TOPIC = "frigate/#"
-MODEL_NAME = 'yolo11m'
 
+MODEL_NAME = 'yolo11m'
 model = YOLO("/root/.cache/torch/hub/yolo11m.pt")
 
 def check_gpu():
@@ -113,7 +113,7 @@ def on_message(client, userdata, msg):
 
             # Annotated image (only if detections exist)
             annotated = r.plot()  # Draws boxes on image
-            annotated_path = f"/data/{MODEL_NAME}_annotated.jpg"
+            annotated_path = f"/data/detection2_{MODEL_NAME}_annotated.jpg"
             cv2.imwrite(annotated_path, annotated)
 
             try:
@@ -131,7 +131,7 @@ def on_message(client, userdata, msg):
                     "confidence": float(boxes.conf[i].item()),
                     "bbox": boxes.xyxy[i].tolist()
                 })
-            json_path = f"/data/{MODEL_NAME}_detections.json"
+            json_path = f"/data/detection2_{MODEL_NAME}_detections.json"
             with open(json_path, "w") as f:
                 json.dump(detections, f, indent=2)
             mlflow.log_artifact(json_path)

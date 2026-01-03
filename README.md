@@ -1,16 +1,14 @@
 # detector2
-detector project to run with a Frigate network and Nvidia acceleration
+##detector project to run with a Frigate network and Nvidia acceleration
+(cloned from detection1)
 
-This is intended to be a template.  It runs cleanly in the my homelab setup (mini pc, lots of ram and disk, 1080 Ti GPU).  The following features work:
+This is a container for running ultralytics yolo containers on a frigate setup.  The idea is that we can use variations on a particular yolo model, focusing on yolo11 to start with
+
+It runs cleanly in the my homelab setup (mini pc, lots of ram and disk, 1080 Ti GPU).  The following features work:
 - written in python, all mainline logic is in src/app.py
 - connects to MQTT, responds to all frigate topics
 - a slice of the GPU is allocated
 - has access to a 500GB PVC
-- does some quick matrix math and opencv work to verify the GPU actually works
+- runs a yolo model, generates json and image artifacts 
 - saves resulting image, logs it to MLFlow
 
-To make a new project based on this one:
-1. Fork the project with a good name, maybe detector2-yolo
-2. Update k8s/deployment.yaml - set replicas to 1 to enable the project 
-3. In the Homelab repo, make a new folder in apps, with an appliction.yaml like that for detection1
-4. Resync Homelab in ArgoCD
